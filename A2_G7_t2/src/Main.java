@@ -2,6 +2,7 @@
 
 public class Main {
     public static void main(String[] args) {
+        /*
         String filePath = args[0];
 
         if(args.length > 3) {
@@ -25,10 +26,15 @@ public class Main {
             minPts = Integer.parseInt(args[1]);
             eps = Double.parseDouble(args[2]);
         }
+         */
+
+        int minPts = 4;
+        double eps = 0.5;
 
         // read all points
+        DBscan db = new DBscan("./artd_31.csv");
+
         // 모든 포인트 분류
-        //
 
         for (int i = 1; i <= 5; i++) {
             //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
