@@ -11,9 +11,11 @@ public class DBscan {
         this.data_points = new ArrayList<>();
 
         String data_buf;
+        int index = 0;
         while((data_buf = this.file.readLine()) != null) {
             String[] data = data_buf.split(",");
-            this.data_points.add(new Point(Integer.parseInt(data[0]), Double.parseDouble(data[1]), Double.parseDouble(data[2])));
+            this.data_points.add(new Point(index, Double.parseDouble(data[1]), Double.parseDouble(data[2])));
+            index++;
         }
 
         for (Point dataPoint : data_points) {

@@ -32,7 +32,7 @@ public class Main {
         double eps = 0.5;
 
         // read all points
-        DBscan db = new DBscan("./artd_31.csv");
+        DBscan db = new DBscan("./artd-31.csv");
 
         // 모든 포인트 분류
 
