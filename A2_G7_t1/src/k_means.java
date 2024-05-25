@@ -34,6 +34,8 @@ public class k_means {
             List<Point> resultCentroidList = null;
             List<Double> resultDistList = new ArrayList<>();
             // estimate k
+            double random = Math.random();
+            Integer startIdx = (int) (random * pointsList.size());
             if (K == null) {
                 List<Point>[] k_PointList = new ArrayList[N];
                 for (int i = 0; i < N; i++) {
@@ -42,16 +44,18 @@ public class k_means {
                     }
                     K = i + 1;
                     // System.out.println("K: " + K);
-                    resultCentroidList = k_means_plus_plus(pointsList, K);
+                    resultCentroidList = k_means_plus_plus(pointsList, K, startIdx);
                     // averge distance of centroids
                     Double sumDist = 0.0;
-                    for (int j = 0; j < K; j++) {
-                        for (int k = j+1; k < K; k++) {
-                            sumDist += distance(resultCentroidList.get(j), resultCentroidList.get(k));
-                        }
-                    }
-                    sumDist /= (K * (K-1) / 2);
-                    resultDistList.add(sumDist);
+                    Double J = calJ(resultCentroidList, pointsList);
+                    // for (int j = 0; j < K; j++) {
+                    //     for (int k = j+1; k < K; k++) {
+                    //         sumDist += distance(resultCentroidList.get(j), resultCentroidList.get(k));
+                    //     }
+                    // }
+                    // sumDist /= (K * (K-1) / 2);
+                    // resultDistList.add(sumDist);
+                    resultDistList.add(J);
                     k_PointList[i] = new ArrayList<>(); 
                     for (Point p: pointsList) {
                         k_PointList[i].add(p.copy());
@@ -60,7 +64,12 @@ public class k_means {
                 Double maxDist = Double.MIN_VALUE;
                 for (int i = 1; i < N; i++) {
                     Double diff = -resultDistList.get(i) + resultDistList.get(i-1);
-                    if (maxDist < diff) {
+                    if (diff < 0) {
+                        maxDist = diff;
+                        K = i;
+                        break;
+                    }
+                    else if (maxDist < diff) {
                         maxDist = diff;
                         K = i + 1;
                     }
@@ -73,7 +82,7 @@ public class k_means {
             }
             // k-means++ 
             else {
-                resultCentroidList = k_means_plus_plus(pointsList, K);
+                resultCentroidList = k_means_plus_plus(pointsList, K, startIdx);
             }
 
             
@@ -105,10 +114,21 @@ public class k_means {
     static Double distance(Point p1, Point p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     }
-    static List<Point> k_means_plus_plus(List<Point> pointsList, Integer K) {
+    static Double calJ(List<Point> centroids, List<Point> pointsList) {
+        Double sumDist = 0.0;
+        for (Point p: pointsList) {
+            for (Point c: centroids) {
+                if (p.cluster == c.cluster) {
+                    Double dist = distance(p, c);
+                    sumDist += dist;
+                }
+            }
+        }
+        return sumDist;
+    }
+    static List<Point> k_means_plus_plus(List<Point> pointsList, Integer K, Integer startIdx) {
         // generate K centroids
-        double random = Math.random();
-        Integer startIdx = (int) (random * pointsList.size());
+        
         List<Point> centroids = new ArrayList<>();
         centroids.add(pointsList.get(startIdx).copy());
         centroids.get(0).cluster = 1;
@@ -146,7 +166,7 @@ public class k_means {
                     p.cluster = 0;
                     Double minDist = Double.MAX_VALUE;
                     for (Point c: centroids) {
-                        Double dist = distance(p, c);
+                        Double dist = Math.pow(distance(p, c), 2);
                         if (dist < minDist) {
                             minDist = dist;
                             if (p.cluster != c.cluster) {
