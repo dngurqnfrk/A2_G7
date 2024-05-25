@@ -15,7 +15,7 @@ public class DBscan {
         System.out.printf("Before the start clustering\n");
         System.out.printf("Number of data points : %d\n", this.data_points.size());
 
-        HashSet<Point> core_points = new HashSet<>();
+        List<Point> core_points = new ArrayList<>();
         List<Point> noise_points = new ArrayList<>();
         // Classify Points and Eliminate Noise
         for(Point p : this.data_points) {
@@ -30,9 +30,9 @@ public class DBscan {
                     neighbor_count++;
                     if(neighbor_count >= minPts) {
                         core_points.add(p);
-                        if(!check_core)
-                            core++;
+                        core++;
                         check_core = true;
+                        break;
                     }
 
                     if(core_points.contains(other_point)) {
@@ -81,8 +81,10 @@ public class DBscan {
                     if(other_point_cluster_id == -1) {
                         clusters.get(cluster_id).add(other_point.GetID());
                     } else if(other_point_cluster_id != cluster_id) {
-                        clusters.get(cluster_id).addAll(clusters.get(other_point_cluster_id));
-                        clusters.remove(other_point_cluster_id);
+                        int bigger_cluster_id = Math.max(cluster_id, other_point_cluster_id);
+                        int smaller_cluster_id = Math.min(cluster_id, other_point_cluster_id);
+                        clusters.get(smaller_cluster_id).addAll(clusters.get(bigger_cluster_id));
+                        clusters.remove(bigger_cluster_id);
                         num_clusters--;
                         cluster_id = GetClusterID(p, clusters);
                     }
@@ -171,14 +173,28 @@ public class DBscan {
         while(!pq_kth_point_distance.isEmpty()) {
             kth_point_distance.add(pq_kth_point_distance.poll());
         }
-
-        System.out.println("Approximate Eps\n");
-        double previous = 0;
+        double longest_distance = kth_point_distance.get(kth_point_distance.size() - 1);
         for (Double v : kth_point_distance) {
-            System.out.printf("[%d] %f\n", kth_point_distance.indexOf(v) + 1, v - previous);
-            previous = v;
+            System.out.printf("[%d] %f\n", kth_point_distance.indexOf(v) + 1, v);
+        }
+        System.out.println();
+        System.out.println();
+
+        kth_point_distance.replaceAll(v -> v / longest_distance);
+        System.out.println("Approximate Eps\n");
+        double largest_gap = 0;
+        int largest_gap_x = 0;
+        for (Double v : kth_point_distance) {
+            double normalized_x = (double)(kth_point_distance.indexOf(v) + 1)/(double)kth_point_distance.size();
+            System.out.printf("[%f] %f / %f\n", normalized_x, v, normalized_x - v);
+            if(largest_gap < normalized_x - v) {
+                largest_gap = normalized_x - v;
+                largest_gap_x = kth_point_distance.indexOf(v);
+            }
         }
 
+        System.out.printf("I think the appropriate eps value is %f\n", kth_point_distance.get(largest_gap_x) * longest_distance);
+        System.out.printf("At x : %d\n", largest_gap_x);
         return 0;
     }
 

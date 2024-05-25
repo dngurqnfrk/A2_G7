@@ -30,9 +30,9 @@ public class Main {
         }
          */
 
-        int minPts = 5;
-        double eps = 0.5;
+        int minPts = 4;
+        double eps = 10000;
 
-        //db.ClassifyPoints(minPts, eps);
+        db.ClassifyPoints(minPts, eps);
     }
 }
