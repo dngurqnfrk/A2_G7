@@ -29,7 +29,8 @@ public class k_means {
                 set.add(Integer.parseInt(tokens[3]));
             }
             br.close();
-            Integer N = 20;
+            // System.out.println("degree:"+degree(new Point("1", 0.0, 0.0, -1), new Point("2", 1.0, 0.0,-1), new Point("3", 2.0, 0.0,-1)));
+            Integer N = 30;
             
             List<Point> resultCentroidList = null;
             List<Double> resultDistList = new ArrayList<>();
@@ -38,6 +39,7 @@ public class k_means {
             Integer startIdx = (int) (random * pointsList.size());
             if (K == null) {
                 List<Point>[] k_PointList = new ArrayList[N];
+                // iterate k from 1 to N
                 for (int i = 0; i < N; i++) {
                     for (Point p: pointsList) {
                         p.cluster = -1;
@@ -61,22 +63,50 @@ public class k_means {
                         k_PointList[i].add(p.copyResult());
                     }
                 }
+
+                // find elbow point
+                Double dy = resultDistList.get(N-1) - resultDistList.get(0);
+                Double dx = (double) N - 1;
                 Double maxDist = Double.MIN_VALUE;
-                for (int i = 1; i < N; i++) {
-                    Double diff = -resultDistList.get(i) + resultDistList.get(i-1);
-                    if (diff < 0) {
-                        maxDist = diff;
-                        K = i;
-                        break;
-                    }
-                    else if (maxDist < diff) {
-                        maxDist = diff;
+                for (int i = 0; i < N; i++) {
+                    Double dist = Math.abs(dy * i - dx * (resultDistList.get(i) - resultDistList.get(0))) / Math.sqrt(dy * dy + dx * dx);
+                    // System.out.println("i: "+i+" dist: " + dist + " maxDist: " + maxDist);
+                    if (dist > maxDist) {
+                        maxDist = dist;
                         K = i + 1;
                     }
                 }
-                for (Double d: resultDistList) {
-                    System.out.println(d);
-                }
+
+                // Double maxDist = Double.MIN_VALUE;
+                // Double minDegree = Math.PI;
+                // for (int i = 2; i < N; i++) {
+                //     // Point p1 = new Point("x1", 1.0, resultDistList.get(i-2), -1);
+                //     // Point p2 = new Point("x2", 2.0, resultDistList.get(i-1), -1);
+                //     // Point p3 = new Point("x3", 3.0, resultDistList.get(i), -1);
+                //     // System.out.println(p1.y+" "+p2.y+" "+p3.y);
+                //     Double d1 = resultDistList.get(i-2);
+                //     Double d2 = resultDistList.get(i-1);
+                //     Double d3 = resultDistList.get(i);
+                //     Double r1 = d1 - d2;
+                //     Double r2 = d2 - d3;
+                //     // Double diff = -resultDistList.get(i) + resultDistList.get(i-1);
+                //     // Double dg = degree(p1, p2, p3);
+                //     Double diff = r1 - r2;
+                //     // Double dg = (degree(p1, p2, p3) < 0)? Math.PI - degree(p1, p2, p3): degree(p1, p2, p3);
+                //     // System.out.println("diff: " + diff + " dg: " + dg);
+                //     if (r2 < 0) {
+                //         maxDist = diff;
+                //         K = i;
+                //         break;
+                //     }
+                //     else if (diff > maxDist) {
+                //         maxDist = diff;
+                //         K = i - 1;
+                //     }
+                // }
+                // for (Double d: resultDistList) {
+                //     System.out.println(d);
+                // }
                 pointsList = k_PointList[K-1]; 
                 System.out.println("estimated k: " + K);   
             }
@@ -110,6 +140,16 @@ public class k_means {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    static Double degree(Point p1, Point p2, Point p3) {
+        Double x1 = p1.x - p2.x;
+        Double y1 = p1.y - p2.y;
+        Double x2 = p3.x - p2.x;
+        Double y2 = p3.y - p2.y;
+        Double innerProduct = x1 * x2 + y1 * y2;
+        Double dist1 = Math.sqrt(x1 * x1 + y1 * y1);
+        Double dist2 = Math.sqrt(x2 * x2 + y2 * y2);
+        return Math.acos(innerProduct / (dist1 * dist2));
     }
     static Double distance(Point p1, Point p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
@@ -159,23 +199,30 @@ public class k_means {
 
         // update cluster and re-calculate centroids
         boolean changed = true;
+        int cnt = 0;
         while (changed) {
             changed = false;
+            cnt++;
+            // System.out.println("cnt: " + cnt);
             for (Point p: pointsList) {
-                if (p.cluster == -1 || p.cluster == 0) {
-                    p.cluster = 0;
-                    Double minDist = Double.MAX_VALUE;
-                    for (Point c: centroids) {
-                        Double dist = Math.pow(distance(p, c), 2);
-                        if (dist < minDist) {
-                            minDist = dist;
-                            if (p.cluster != c.cluster) {
-                                changed = true;
-                            }
-                            p.cluster = c.cluster;
-                        }
+                Point selectedCentroid = null;
+                Double minDist = Double.MAX_VALUE;
+                for (Point c: centroids) {
+                    Double dist = distance(p, c);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        selectedCentroid = c;
+                        // p.cluster = c.cluster;
                     }
                 }
+                if (p.cluster != selectedCentroid.cluster) {
+                    changed = true;
+                    // System.out.println(p.cluster+" "+selectedCentroid.cluster);
+                }
+                p.cluster = selectedCentroid.cluster;
+                // if (p.cluster == -1 || p.cluster == 0) {
+                //     p.cluster = 0;
+                // }
             }
             for (Point c: centroids) {
                 c.x = 0.0;
@@ -191,7 +238,9 @@ public class k_means {
                 c.x /= count;
                 c.y /= count;
             }
-            break;
+            // for(Point c: centroids) {
+            //     System.out.println(c.name + " " + c.x + " " + c.y + " " + c.cluster);
+            // }
         }
         return centroids;
     }
