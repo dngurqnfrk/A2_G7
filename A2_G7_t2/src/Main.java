@@ -2,6 +2,8 @@
 
 public class Main {
     public static void main(String[] args) {
+        DBscan db = new DBscan("./artd-31.csv");
+        db.Approximate_Eps(4);
         /*
         String filePath = args[0];
 
@@ -28,12 +30,11 @@ public class Main {
         }
          */
 
-        int minPts = 4;
+        int minPts = 5;
         double eps = 0.5;
 
         // read all points
-        DBscan db = new DBscan("./artd-31.csv");
-
+        db.ClassifyPoints(minPts, eps);
         // 모든 포인트 분류
 
         for (int i = 1; i <= 5; i++) {
