@@ -12,9 +12,12 @@ public class DBscan {
         int core = 0;
         int noise = 0;
 
-        int num_clusters = 0;
+        System.out.printf("Before the start clustering\n");
+        System.out.printf("Number of data points : %d\n", this.data_points.size());
+
         HashSet<Point> core_points = new HashSet<>();
-        List<HashSet<Integer>> clusters = new ArrayList<>();
+        List<Point> noise_points = new ArrayList<>();
+        // Classify Points and Eliminate Noise
         for(Point p : this.data_points) {
             int  neighbor_count = 0;
             boolean check_core = false;
@@ -27,7 +30,8 @@ public class DBscan {
                     neighbor_count++;
                     if(neighbor_count >= minPts) {
                         core_points.add(p);
-                        core++;
+                        if(!check_core)
+                            core++;
                         check_core = true;
                     }
 
@@ -44,11 +48,22 @@ public class DBscan {
                 border++;
             } else {
                 noise++;
+                noise_points.add(p);
             }
         }
 
+        for (Point noisePoint : noise_points) {
+            this.data_points.remove(noisePoint);
+        }
+
+        System.out.printf("After Remove noisePoints\n");
+        System.out.printf("Number of data points : %d\n", this.data_points.size());
+
         System.out.printf("Core : %d, Border : %d, Noise : %d\n", core, border, noise);
 
+        // remove core points and cluster points
+        int num_clusters = 0;
+        List<HashSet<Integer>> clusters = new ArrayList<>();
         for(Point p : core_points) {
             if(num_clusters == 0 || !Check_Point_In_Cluster(p, clusters)) {
                 clusters.add(new HashSet<>());
@@ -57,7 +72,7 @@ public class DBscan {
             }
             int cluster_id = GetClusterID(p, clusters);
 
-            for(Point other_point : this.data_points) {
+            for(Point other_point : core_points) {
                 if(other_point.GetID() == p.GetID())
                     continue;
 
@@ -74,6 +89,36 @@ public class DBscan {
                 }
             }
         }
+
+        for (Point p : core_points) {
+            this.data_points.remove(p);
+        }
+
+        System.out.printf("After Remove the core points\n");
+        System.out.printf("Number of data points : %d\n", this.data_points.size());
+
+        for(Point border_p : this.data_points) {
+            double shortest_distance = Double.MAX_VALUE;
+            Point shortest_core_point = null;
+            for(Point core_p : core_points) {
+                if(border_p.Distance(core_p) < shortest_distance) {
+                    shortest_distance = border_p.Distance(core_p);
+                    shortest_core_point = core_p;
+                }
+            }
+            if(shortest_core_point == null)
+                continue;
+
+            for (HashSet<Integer> cluster : clusters) {
+                if(cluster.contains(shortest_core_point.GetID())) {
+                    cluster.add(border_p.GetID());
+                    break;
+                }
+            }
+        }
+
+        System.out.printf("Number of clusters : %d\n", num_clusters);
+        System.out.printf("Number of noise : %d\n", noise);
 
         for (int i = 0; i < clusters.size(); i++) {
             System.out.printf("Cluster #%d => ", i+1);

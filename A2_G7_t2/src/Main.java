@@ -33,14 +33,6 @@ public class Main {
         int minPts = 5;
         double eps = 0.5;
 
-        // read all points
-        db.ClassifyPoints(minPts, eps);
-        // 모든 포인트 분류
-
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+        //db.ClassifyPoints(minPts, eps);
     }
 }
