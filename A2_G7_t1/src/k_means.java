@@ -58,7 +58,7 @@ public class k_means {
                     resultDistList.add(J);
                     k_PointList[i] = new ArrayList<>(); 
                     for (Point p: pointsList) {
-                        k_PointList[i].add(p.copy());
+                        k_PointList[i].add(p.copyResult());
                     }
                 }
                 Double maxDist = Double.MIN_VALUE;
@@ -119,7 +119,7 @@ public class k_means {
         for (Point p: pointsList) {
             for (Point c: centroids) {
                 if (p.cluster == c.cluster) {
-                    Double dist = distance(p, c);
+                    Double dist = Math.pow(distance(p, c), 2);
                     sumDist += dist;
                 }
             }
@@ -210,5 +210,8 @@ class Point {
     }
     public Point copy() {
         return new Point("copy_" + this.name, this.x, this.y, this.cluster);
+    }
+    public Point copyResult() {
+        return new Point(this.name, this.x, this.y, this.cluster);
     }
 }
