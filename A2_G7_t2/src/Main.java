@@ -31,7 +31,7 @@ public class Main {
          */
 
         int minPts = 4;
-        double eps = 10000;
+        double eps = 10595.985089;
 
         db.ClassifyPoints(minPts, eps);
     }
