@@ -2,10 +2,9 @@
 
 public class Main {
     public static void main(String[] args) {
-        DBscan db = new DBscan("./artd-31.csv");
-        db.Approximate_Eps(4);
-        /*
         String filePath = args[0];
+
+        DBscan db = new DBscan(filePath);
 
         if(args.length > 3) {
             System.out.println("Invalid arguments");
@@ -18,20 +17,17 @@ public class Main {
         if(args.length == 2) {
             try{
                 minPts = Integer.parseInt(args[1]);
-                // appropriate eps value
+                eps = db.Approximate_Eps(minPts);
+                System.out.printf("Estimated Eps : %f\n", eps);
             } catch (NumberFormatException e) {
-                System.out.println("argument is double");
                 eps  = Double.parseDouble(args[1]);
-                // appropriate minPts value
+                minPts = db.Approximate_MinPts(eps);
+                System.out.printf("Estimated MinPts : %d\n", minPts);
             }
         } else {
             minPts = Integer.parseInt(args[1]);
             eps = Double.parseDouble(args[2]);
         }
-         */
-
-        int minPts = 4;
-        double eps = 10595.985089;
 
         db.ClassifyPoints(minPts, eps);
     }

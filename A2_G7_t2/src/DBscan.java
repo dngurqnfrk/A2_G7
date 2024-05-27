@@ -8,20 +8,13 @@ public class DBscan {
     ArrayList<Point> data_points;
 
     public void ClassifyPoints(int minPts, double eps) {
-        int border = 0;
-        int core = 0;
         int noise = 0;
-
-        System.out.printf("Before the start clustering\n");
-        System.out.printf("Number of data points : %d\n", this.data_points.size());
 
         List<Point> core_points = new ArrayList<>();
         List<Point> noise_points = new ArrayList<>();
         // Classify Points and Eliminate Noise
         for(Point p : this.data_points) {
             int  neighbor_count = 0;
-            boolean check_core = false;
-            boolean check_border = false;
             for(Point other_point : this.data_points) {
                 if(other_point.GetID() == p.GetID())
                     continue;
@@ -30,38 +23,37 @@ public class DBscan {
                     neighbor_count++;
                     if(neighbor_count >= minPts) {
                         core_points.add(p);
-                        core++;
-                        check_core = true;
                         break;
-                    }
-
-                    if(core_points.contains(other_point)) {
-                        check_border = true;
                     }
                 }
             }
-
-            if(check_core)
-                continue;
-
-            if(check_border) {
-                border++;
-            } else {
-                noise++;
-                noise_points.add(p);
-            }
         }
 
-        for (Point noisePoint : noise_points) {
+        for(Point corePoint : core_points) {
+            this.data_points.remove(corePoint);
+        }
+
+        for(Point p : this.data_points) {
+            boolean Check_Border = false;
+            for(Point corePoint : core_points) {
+                if(p.Distance(corePoint) <= eps) {
+                    Check_Border = true;
+                    break;
+                }
+            }
+
+            if(Check_Border)
+                continue;
+
+            noise_points.add(p);
+            noise++;
+        }
+
+        for(Point noisePoint : noise_points) {
             this.data_points.remove(noisePoint);
         }
 
-        System.out.printf("After Remove noisePoints\n");
-        System.out.printf("Number of data points : %d\n", this.data_points.size());
-
-        System.out.printf("Core : %d, Border : %d, Noise : %d\n", core, border, noise);
-
-        // remove core points and cluster points
+        // Clustering Core Points
         int num_clusters = 0;
         List<HashSet<Integer>> clusters = new ArrayList<>();
         for(Point p : core_points) {
@@ -92,13 +84,7 @@ public class DBscan {
             }
         }
 
-        for (Point p : core_points) {
-            this.data_points.remove(p);
-        }
-
-        System.out.printf("After Remove the core points\n");
-        System.out.printf("Number of data points : %d\n", this.data_points.size());
-
+        // Clustering Border Points
         for(Point border_p : this.data_points) {
             double shortest_distance = Double.MAX_VALUE;
             Point shortest_core_point = null;
@@ -125,9 +111,7 @@ public class DBscan {
         for (int i = 0; i < clusters.size(); i++) {
             System.out.printf("Cluster #%d => ", i+1);
             PriorityQueue<Integer> pq_point_id = new PriorityQueue<>();
-            for (Integer id : clusters.get(i)) {
-                pq_point_id.add(id);
-            }
+            pq_point_id.addAll(clusters.get(i));
             while(!pq_point_id.isEmpty()) {
                 System.out.printf("p%d ", pq_point_id.poll());
             }
@@ -154,7 +138,7 @@ public class DBscan {
     }
 
     public double Approximate_Eps(int minPts) {
-        double app_eps;
+        // add k-th neighbor distance
         PriorityQueue<Double> pq_kth_point_distance = new PriorityQueue<>();
         for (Point dataPoint : data_points) {
             PriorityQueue<Double> pq_point_distance = new PriorityQueue<>();
@@ -169,33 +153,51 @@ public class DBscan {
             }
             pq_kth_point_distance.add(pq_point_distance.poll());
         }
+
+
         List<Double> kth_point_distance = new ArrayList<>();
         while(!pq_kth_point_distance.isEmpty()) {
             kth_point_distance.add(pq_kth_point_distance.poll());
         }
         double longest_distance = kth_point_distance.get(kth_point_distance.size() - 1);
-        for (Double v : kth_point_distance) {
-            System.out.printf("[%d] %f\n", kth_point_distance.indexOf(v) + 1, v);
-        }
-        System.out.println();
-        System.out.println();
 
         kth_point_distance.replaceAll(v -> v / longest_distance);
-        System.out.println("Approximate Eps\n");
         double largest_gap = 0;
         int largest_gap_x = 0;
         for (Double v : kth_point_distance) {
             double normalized_x = (double)(kth_point_distance.indexOf(v) + 1)/(double)kth_point_distance.size();
-            System.out.printf("[%f] %f / %f\n", normalized_x, v, normalized_x - v);
             if(largest_gap < normalized_x - v) {
                 largest_gap = normalized_x - v;
                 largest_gap_x = kth_point_distance.indexOf(v);
             }
         }
 
-        System.out.printf("I think the appropriate eps value is %f\n", kth_point_distance.get(largest_gap_x) * longest_distance);
-        System.out.printf("At x : %d\n", largest_gap_x);
-        return 0;
+        return kth_point_distance.get(largest_gap_x) * longest_distance;
+    }
+
+    public int Approximate_MinPts(double eps)
+    {
+        // 3부터 시작할지 4부터 시작할지 모름
+        double previous_eps = 0;
+        double now_eps;
+        int k = 3;
+        while(true) {
+            now_eps = Approximate_Eps(k);
+            if(now_eps > eps) {
+                break;
+            }
+            k++;
+            previous_eps = now_eps;
+        }
+
+        if(k == 3)
+            return 3;
+
+        if(eps - previous_eps <= now_eps - eps) {
+            return k - 1;
+        } else {
+            return k;
+        }
     }
 
     DBscan(String _filePath) {
