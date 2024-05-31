@@ -1,6 +1,6 @@
-// A2_G7_t2 : DB scan 알고리즘
+// A2_G7_t2 : DB scan Alg
 
-public class Main {
+public class A2_G7_t2 {
     public static void main(String[] args) {
         String filePath = args[0];
 

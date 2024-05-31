@@ -62,13 +62,6 @@ public class DBscan {
         List<HashSet<Integer>> clusters = Connect_Core_Points(core_points, eps);
         int num_clusters = clusters.size();
 
-        int num_in_clusters = 0;
-        for (HashSet<Integer> cluster : clusters) {
-            num_in_clusters += cluster.size();
-        }
-
-        System.out.printf("In clusters, num of points is %d\n", num_in_clusters);
-
         // Clustering Border Points
         for(Point border_p : this.data_points) {
             double shortest_distance = Double.MAX_VALUE;
@@ -96,10 +89,9 @@ public class DBscan {
         for (int i = 0; i < clusters.size(); i++) {
             PriorityQueue<Integer> pq_point_id = new PriorityQueue<>();
             pq_point_id.addAll(clusters.get(i));
+            System.out.printf("Cluster #%d => ", i + 1);
             while(!pq_point_id.isEmpty()) {
-                System.out.printf("%d", pq_point_id.poll());
-                if(!pq_point_id.isEmpty())
-                    System.out.printf(",");
+                System.out.printf("%d ", pq_point_id.poll());
             }
             System.out.println();
         }
@@ -123,9 +115,9 @@ public class DBscan {
 
         id_stack.add(core_points_copy.get(0));
 
-        // 모든 포인트들을 순회하며 clustering
+        // tour all points and clustering them
         while(!id_stack.isEmpty() || !core_points_copy.isEmpty()) {
-            //스택이 비어있으면 지금까지 순회한 core point들을 제거하고 다음 core point를 스택에 넣음
+            // If stack is empty, remove all core points that have been traversed and put the next core point in the stack
             if(id_stack.isEmpty()) {
                 Erase_clustered_points(core_points_copy, clusters);
                 if(core_points_copy.isEmpty())
@@ -139,7 +131,7 @@ public class DBscan {
 
             int cluster_id = GetClusterID(p, clusters);
 
-            // 포인트 p가 아직 클러스터링 되지 않았다면 새로운 클러스터 생성
+            // If point p has not been clustered yet, create a new cluster
             if (num_clusters == 0 || cluster_id == -1) {
                 clusters.add(new HashSet<>());
                 clusters.get(num_clusters).add(p.GetID());
@@ -147,7 +139,7 @@ public class DBscan {
                 num_clusters++;
             }
 
-            // 포인트 p와 eps 거리 이내의 포인트들을 찾아서 클러스터에 추가
+            // If the distance between point p and other points is within eps, add the point to the stack
             for (Point other_point : core_points_copy) {
                 if (other_point.GetID() == p.GetID())
                     continue;
@@ -155,7 +147,7 @@ public class DBscan {
                 if (p.Distance(other_point) <= eps) {
                     int other_point_cluster_id = GetClusterID(other_point, clusters);
 
-                    // 이미 스택에 포인트가 있었던 경우가 아니면 스택에 추가
+                    // Add to stack if the point is not already in the stack or has been traversed
                     if(!id_stack.contains(other_point) && !history_stack.contains(other_point))
                         id_stack.add(other_point);
                     if (other_point_cluster_id == -1) {
@@ -218,10 +210,6 @@ public class DBscan {
 
         kth_point_distance.replaceAll(v -> v / longest_distance);
 
-        for (Double v : kth_point_distance) {
-            System.out.println(v);
-        }
-
         double largest_gap = 0;
         int largest_gap_x = 0;
 
@@ -233,14 +221,11 @@ public class DBscan {
             }
         }
 
-        System.out.printf("Largest gap : %f\n", largest_gap);
-
         return kth_point_distance.get(largest_gap_x) * longest_distance;
     }
 
     public int Approximate_MinPts(double eps)
     {
-        // 3부터 시작할지 4부터 시작할지 모름
         double previous_eps = 0;
         double now_eps;
         int k = 3;

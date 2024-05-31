@@ -1,12 +1,10 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-// A2_G7_t1 : k-means++ 알고리즘
-public class k_means {
+
+// A2_G7_t1 : k-means++ Algorithm
+public class A2_G7_t1 {
     public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             System.exit(1);
@@ -114,8 +112,6 @@ public class k_means {
             else {
                 resultCentroidList = k_means_plus_plus(pointsList, K, startIdx);
             }
-
-            
             
             // print result
             List<String>[] culsterName = new ArrayList[K];
@@ -128,11 +124,12 @@ public class k_means {
                     }
                 }
             }
-            // System.out.println("estimated k: " + K);
             for (int i = 0; i < K; i++) {
                 System.out.print("Cluster #" + (i+1) + " => ");
                 for (String name: culsterName[i]) {
-                    System.out.print(name + " ");
+                    System.out.print(name);
+                    if(culsterName[i].indexOf(name) != culsterName[i].size()-1)
+                        System.out.print(",");
                 }
                 System.out.println();
             }
@@ -206,9 +203,9 @@ public class k_means {
             // System.out.println("cnt: " + cnt);
             for (Point p: pointsList) {
                 Point selectedCentroid = null;
-                Double minDist = Double.MAX_VALUE;
+                double minDist = Double.MAX_VALUE;
                 for (Point c: centroids) {
-                    Double dist = distance(p, c);
+                    double dist = distance(p, c);
                     if (dist < minDist) {
                         minDist = dist;
                         selectedCentroid = c;
@@ -224,6 +221,7 @@ public class k_means {
                 //     p.cluster = 0;
                 // }
             }
+
             for (Point c: centroids) {
                 c.x = 0.0;
                 c.y = 0.0;
@@ -238,9 +236,6 @@ public class k_means {
                 c.x /= count;
                 c.y /= count;
             }
-            // for(Point c: centroids) {
-            //     System.out.println(c.name + " " + c.x + " " + c.y + " " + c.cluster);
-            // }
         }
         return centroids;
     }
