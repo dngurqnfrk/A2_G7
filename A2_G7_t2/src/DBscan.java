@@ -21,12 +21,17 @@ public class DBscan {
 
                 if(p.Distance(other_point) <= eps) {
                     neighbor_count++;
-                    if(neighbor_count >= minPts) {
-                        core_points.add(p);
-                        break;
-                    }
+                }
+                if(neighbor_count >= minPts - 1) {
+                    core_points.add(p);
+                    break;
                 }
             }
+        }
+
+        if(core_points.isEmpty()) {
+            System.out.println("No core points");
+            return;
         }
 
         for(Point corePoint : core_points) {
@@ -54,35 +59,15 @@ public class DBscan {
         }
 
         // Clustering Core Points
-        int num_clusters = 0;
-        List<HashSet<Integer>> clusters = new ArrayList<>();
-        for(Point p : core_points) {
-            if(num_clusters == 0 || !Check_Point_In_Cluster(p, clusters)) {
-                clusters.add(new HashSet<>());
-                clusters.get(num_clusters).add(p.GetID());
-                num_clusters++;
-            }
-            int cluster_id = GetClusterID(p, clusters);
+        List<HashSet<Integer>> clusters = Connect_Core_Points(core_points, eps);
+        int num_clusters = clusters.size();
 
-            for(Point other_point : core_points) {
-                if(other_point.GetID() == p.GetID())
-                    continue;
-
-                if(p.Distance(other_point) <= eps) {
-                    int other_point_cluster_id = GetClusterID(other_point, clusters);
-                    if(other_point_cluster_id == -1) {
-                        clusters.get(cluster_id).add(other_point.GetID());
-                    } else if(other_point_cluster_id != cluster_id) {
-                        int bigger_cluster_id = Math.max(cluster_id, other_point_cluster_id);
-                        int smaller_cluster_id = Math.min(cluster_id, other_point_cluster_id);
-                        clusters.get(smaller_cluster_id).addAll(clusters.get(bigger_cluster_id));
-                        clusters.remove(bigger_cluster_id);
-                        num_clusters--;
-                        cluster_id = GetClusterID(p, clusters);
-                    }
-                }
-            }
+        int num_in_clusters = 0;
+        for (HashSet<Integer> cluster : clusters) {
+            num_in_clusters += cluster.size();
         }
+
+        System.out.printf("In clusters, num of points is %d\n", num_in_clusters);
 
         // Clustering Border Points
         for(Point border_p : this.data_points) {
@@ -109,23 +94,15 @@ public class DBscan {
         System.out.printf("Number of noise : %d\n", noise);
 
         for (int i = 0; i < clusters.size(); i++) {
-            System.out.printf("Cluster #%d => ", i+1);
             PriorityQueue<Integer> pq_point_id = new PriorityQueue<>();
             pq_point_id.addAll(clusters.get(i));
             while(!pq_point_id.isEmpty()) {
-                System.out.printf("p%d ", pq_point_id.poll());
+                System.out.printf("%d", pq_point_id.poll());
+                if(!pq_point_id.isEmpty())
+                    System.out.printf(",");
             }
             System.out.println();
         }
-    }
-
-    public boolean Check_Point_In_Cluster(Point p, List<HashSet<Integer>> clusters) {
-        for (HashSet<Integer> cluster : clusters) {
-            if(cluster.contains(p.GetID())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public int GetClusterID(Point p, List<HashSet<Integer>> clusters) {
@@ -135,6 +112,84 @@ public class DBscan {
             }
         }
         return -1;
+    }
+
+    public List<HashSet<Integer>> Connect_Core_Points(List<Point> core_points, double eps) {
+        List<HashSet<Integer>> clusters = new ArrayList<>();
+        int num_clusters = 0;
+        List<Point> id_stack = new ArrayList<>();
+        List<Point> history_stack = new ArrayList<>();
+        List<Point> core_points_copy = new ArrayList<>(core_points);
+
+        id_stack.add(core_points_copy.get(0));
+
+        // 모든 포인트들을 순회하며 clustering
+        while(!id_stack.isEmpty() || !core_points_copy.isEmpty()) {
+            //스택이 비어있으면 지금까지 순회한 core point들을 제거하고 다음 core point를 스택에 넣음
+            if(id_stack.isEmpty()) {
+                Erase_clustered_points(core_points_copy, clusters);
+                if(core_points_copy.isEmpty())
+                    break;
+                else
+                    id_stack.add(core_points_copy.get(0));
+            }
+            Point p = id_stack.get(0);
+            history_stack.add(p);
+            id_stack.remove(0);
+
+            int cluster_id = GetClusterID(p, clusters);
+
+            // 포인트 p가 아직 클러스터링 되지 않았다면 새로운 클러스터 생성
+            if (num_clusters == 0 || cluster_id == -1) {
+                clusters.add(new HashSet<>());
+                clusters.get(num_clusters).add(p.GetID());
+                cluster_id = num_clusters;
+                num_clusters++;
+            }
+
+            // 포인트 p와 eps 거리 이내의 포인트들을 찾아서 클러스터에 추가
+            for (Point other_point : core_points_copy) {
+                if (other_point.GetID() == p.GetID())
+                    continue;
+
+                if (p.Distance(other_point) <= eps) {
+                    int other_point_cluster_id = GetClusterID(other_point, clusters);
+
+                    // 이미 스택에 포인트가 있었던 경우가 아니면 스택에 추가
+                    if(!id_stack.contains(other_point) && !history_stack.contains(other_point))
+                        id_stack.add(other_point);
+                    if (other_point_cluster_id == -1) {
+                        clusters.get(cluster_id).add(other_point.GetID());
+                    } else if (other_point_cluster_id != cluster_id) {
+                        System.out.printf("Merge %d and %d\n", cluster_id, other_point_cluster_id);
+                        int bigger_cluster_id = Math.max(cluster_id, other_point_cluster_id);
+                        int smaller_cluster_id = Math.min(cluster_id, other_point_cluster_id);
+                        clusters.get(smaller_cluster_id).addAll(clusters.get(bigger_cluster_id));
+                        clusters.remove(bigger_cluster_id);
+                        num_clusters--;
+                        cluster_id = GetClusterID(p, clusters);
+                    }
+                }
+            }
+
+            core_points_copy.remove(p);
+        }
+
+        return clusters;
+    }
+
+    public void Erase_clustered_points(List<Point> core_point, List<HashSet<Integer>> clusters)
+    {
+        for (HashSet<Integer> cluster : clusters) {
+            for (Integer i : cluster) {
+                for (Point p : core_point) {
+                    if (p.GetID() == i) {
+                        core_point.remove(p);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     public double Approximate_Eps(int minPts) {
@@ -148,7 +203,7 @@ public class DBscan {
 
                 pq_point_distance.add(dataPoint.Distance(otherPoint));
             }
-            for(int i = 0; i < minPts; i++) {
+            for(int i = 0; i < minPts - 2; i++) {
                 pq_point_distance.poll();
             }
             pq_kth_point_distance.add(pq_point_distance.poll());
@@ -162,8 +217,14 @@ public class DBscan {
         double longest_distance = kth_point_distance.get(kth_point_distance.size() - 1);
 
         kth_point_distance.replaceAll(v -> v / longest_distance);
+
+        for (Double v : kth_point_distance) {
+            System.out.println(v);
+        }
+
         double largest_gap = 0;
         int largest_gap_x = 0;
+
         for (Double v : kth_point_distance) {
             double normalized_x = (double)(kth_point_distance.indexOf(v) + 1)/(double)kth_point_distance.size();
             if(largest_gap < normalized_x - v) {
@@ -171,6 +232,8 @@ public class DBscan {
                 largest_gap_x = kth_point_distance.indexOf(v);
             }
         }
+
+        System.out.printf("Largest gap : %f\n", largest_gap);
 
         return kth_point_distance.get(largest_gap_x) * longest_distance;
     }
